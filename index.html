@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A/B Test Dashboards</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0B0E11;
+    --surface: #13171C;
+    --border: rgba(255,255,255,0.06);
+    --text: #E8EAED;
+    --text-muted: #8B919A;
+    --green: #34D399;
+    --green-dim: rgba(52,211,153,0.12);
+    --green-glow: rgba(52,211,153,0.25);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 600px;
+    background: radial-gradient(ellipse, rgba(52,211,153,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 80px 32px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .header-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .header-label::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 12px var(--green-glow);
+    animation: pulse 2s ease infinite;
+  }
+
+  h1 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 42px;
+    font-weight: 400;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+  h1 em { font-style: italic; color: var(--green); }
+
+  .subtitle {
+    font-size: 15px;
+    color: var(--text-muted);
+    margin-bottom: 48px;
+  }
+
+  .dashboard-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .dashboard-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    text-decoration: none;
+    color: var(--text);
+    transition: border-color 0.3s ease, transform 0.15s ease;
+  }
+  .dashboard-link:hover {
+    border-color: rgba(255,255,255,0.14);
+    transform: translateY(-2px);
+  }
+
+  .link-info { display: flex; flex-direction: column; gap: 4px; }
+  .link-title { font-size: 16px; font-weight: 600; }
+  .link-meta { font-size: 13px; color: var(--text-muted); }
+
+  .link-arrow {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--green-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.3s ease;
+  }
+  .dashboard-link:hover .link-arrow { background: var(--green); }
+  .dashboard-link:hover .link-arrow svg { stroke: var(--bg); }
+  .link-arrow svg { stroke: var(--green); transition: stroke 0.3s ease; }
+
+  .tag {
+    display: inline-flex;
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 8px;
+  }
+  .tag-winner { background: var(--green-dim); color: var(--green); }
+  .tag-inconclusive { background: rgba(251,191,36,0.12); color: #FBBF24; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  @media (max-width: 600px) {
+    .container { padding: 48px 20px; }
+    h1 { font-size: 30px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header-label">Dashboard Index</div>
+  <h1>A/B Test <em>Dashboards</em></h1>
+  <p class="subtitle">All experiment results in one place.</p>
+
+  <div class="dashboard-list">
+
+    <a href="/ab-test-dashboard.html" class="dashboard-link">
+      <div class="link-info">
+        <div class="link-title">
+          Conversion Funnel Experiment
+          <span class="tag tag-winner">Winner</span>
+        </div>
+        <div class="link-meta">March 2026 · Visitor → Lead → Client · 3,614 visitors</div>
+      </div>
+      <div class="link-arrow">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </div>
+    </a>
+
+    <!-- Add more dashboards here by copying the block above and changing the href, title, and meta -->
+
+  </div>
+</div>
+</body>
+</html>
