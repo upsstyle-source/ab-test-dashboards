@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A/B Test Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0B0E11;
+    --surface: #13171C;
+    --surface-2: #1A1F26;
+    --surface-3: #222830;
+    --border: rgba(255,255,255,0.06);
+    --text: #E8EAED;
+    --text-muted: #8B919A;
+    --text-dim: #5A6170;
+    --green: #34D399;
+    --green-dim: rgba(52,211,153,0.12);
+    --green-glow: rgba(52,211,153,0.25);
+    --red: #F87171;
+    --red-dim: rgba(248,113,113,0.12);
+    --amber: #FBBF24;
+    --amber-dim: rgba(251,191,36,0.12);
+    --blue: #60A5FA;
+    --blue-dim: rgba(96,165,250,0.12);
+    --purple: #A78BFA;
+    --purple-dim: rgba(167,139,250,0.12);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient glow */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 600px;
+    background: radial-gradient(ellipse, rgba(52,211,153,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .dashboard {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .header {
+    margin-bottom: 48px;
+    animation: fadeUp 0.6s ease both;
+  }
+  .header-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .header-label::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 12px var(--green-glow);
+    animation: pulse 2s ease infinite;
+  }
+  .header h1 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 42px;
+    font-weight: 400;
+    line-height: 1.15;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+  .header h1 em {
+    font-style: italic;
+    color: var(--green);
+  }
+  .header-meta {
+    margin-top: 12px;
+    font-size: 14px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 24px;
+  }
+  .header-meta span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* Top Results Row */
+  .results-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 32px;
+    animation: fadeUp 0.6s ease 0.1s both;
+  }
+  .result-cell {
+    background: var(--surface);
+    padding: 28px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .result-cell:first-child { border-radius: 16px 0 0 16px; }
+  .result-cell:last-child { border-radius: 0 16px 16px 0; }
+  .result-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .result-value {
+    font-family: 'Instrument Serif', serif;
+    font-size: 36px;
+    line-height: 1.2;
+  }
+  .result-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    width: fit-content;
+    margin-top: 4px;
+  }
+  .tag-green { background: var(--green-dim); color: var(--green); }
+  .tag-red { background: var(--red-dim); color: var(--red); }
+  .tag-amber { background: var(--amber-dim); color: var(--amber); }
+
+  /* Funnel Section */
+  .section-title {
+    font-family: 'Instrument Serif', serif;
+    font-size: 24px;
+    font-weight: 400;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-title .num {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 8px;
+    color: var(--text-dim);
+  }
+
+  /* Funnel Visualization */
+  .funnel-section {
+    margin-bottom: 40px;
+    animation: fadeUp 0.6s ease 0.2s both;
+  }
+  .funnel-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+  }
+  .funnel-stage {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s ease, transform 0.2s ease;
+  }
+  .funnel-stage:hover {
+    border-color: rgba(255,255,255,0.12);
+    transform: translateY(-2px);
+  }
+  .funnel-stage::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .funnel-stage:nth-child(1)::before { background: linear-gradient(90deg, var(--blue), var(--purple)); }
+  .funnel-stage:nth-child(2)::before { background: linear-gradient(90deg, var(--purple), var(--green)); }
+  .funnel-stage:nth-child(3)::before { background: linear-gradient(90deg, var(--green), var(--amber)); }
+  .stage-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 16px;
+  }
+  .stage-comparison {
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+  }
+  .stage-variant {
+    flex: 1;
+  }
+  .variant-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+  .variant-value {
+    font-family: 'Instrument Serif', serif;
+    font-size: 28px;
+    line-height: 1.2;
+  }
+  .variant-rate {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .stage-divider {
+    width: 1px;
+    height: 48px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+  .improvement-badge {
+    text-align: center;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 16px;
+  }
+  .imp-positive { background: var(--green-dim); color: var(--green); }
+  .imp-neutral { background: var(--amber-dim); color: var(--amber); }
+
+  /* Bar Chart Section */
+  .chart-section {
+    margin-bottom: 40px;
+    animation: fadeUp 0.6s ease 0.3s both;
+  }
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    transition: border-color 0.3s ease;
+  }
+  .chart-card:hover { border-color: rgba(255,255,255,0.12); }
+  .chart-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+  .bar-chart {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .bar-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    width: 70px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+  .bar-track {
+    flex: 1;
+    height: 28px;
+    background: var(--surface-3);
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--bg);
+    min-width: 40px;
+    transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .bar-fill.control { background: linear-gradient(90deg, #60A5FA, #818CF8); }
+  .bar-fill.variant { background: linear-gradient(90deg, #34D399, #2DD4BF); }
+
+  /* Lead State */
+  .lead-section {
+    animation: fadeUp 0.6s ease 0.4s both;
+    margin-bottom: 40px;
+  }
+  .lead-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .lead-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+  }
+  .lead-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .lead-card-title {
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .lead-total {
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--surface-3);
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+  .lead-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+  .lead-row:last-child { border-bottom: none; }
+  .lead-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .lead-name {
+    font-size: 13px;
+    color: var(--text-muted);
+    flex: 1;
+  }
+  .lead-count {
+    font-size: 14px;
+    font-weight: 600;
+    width: 36px;
+    text-align: right;
+  }
+  .lead-mini-bar {
+    width: 80px;
+    height: 6px;
+    background: var(--surface-3);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .lead-mini-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Probability Section */
+  .prob-section {
+    animation: fadeUp 0.6s ease 0.5s both;
+  }
+  .prob-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  .prob-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .prob-card-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 16px;
+  }
+  .prob-ring {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 12px;
+    position: relative;
+  }
+  .prob-ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+  .prob-ring circle {
+    fill: none;
+    stroke-width: 6;
+    stroke-linecap: round;
+  }
+  .prob-ring .track { stroke: var(--surface-3); }
+  .prob-ring .fill {
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .prob-ring-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Instrument Serif', serif;
+    font-size: 24px;
+  }
+  .prob-result {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 6px;
+    display: inline-block;
+  }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .dashboard { padding: 24px 16px 48px; }
+    .header h1 { font-size: 28px; }
+    .results-strip { grid-template-columns: 1fr; }
+    .result-cell:first-child, .result-cell:last-child { border-radius: 0; }
+    .funnel-grid, .chart-grid, .lead-grid, .prob-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="dashboard">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-label">A/B Test Results</div>
+    <h1>Conversion Funnel <em>Experiment</em></h1>
+    <div class="header-meta">
+      <span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        90% Confidence Level
+      </span>
+      <span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        3,614 Total Visitors
+      </span>
+    </div>
+  </div>
+
+  <!-- Top Results -->
+  <div class="results-strip">
+    <div class="result-cell">
+      <span class="result-label">Visitor → Lead</span>
+      <span class="result-value" style="color: var(--green);">+39%</span>
+      <span class="result-tag tag-green">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        Winner — Variant
+      </span>
+    </div>
+    <div class="result-cell">
+      <span class="result-label">Lead → Client</span>
+      <span class="result-value" style="color: var(--amber);">+50%</span>
+      <span class="result-tag tag-amber">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14"/></svg>
+        Inconclusive
+      </span>
+    </div>
+    <div class="result-cell">
+      <span class="result-label">Visitor → Client</span>
+      <span class="result-value" style="color: var(--green);">+108.86%</span>
+      <span class="result-tag tag-green">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        Winner — Variant
+      </span>
+    </div>
+  </div>
+
+  <!-- Funnel Comparison -->
+  <div class="funnel-section">
+    <div class="section-title"><span class="num">01</span> Funnel Stages</div>
+    <div class="funnel-grid">
+      <!-- Visitor to Lead -->
+      <div class="funnel-stage">
+        <div class="stage-name">Visitor → Lead</div>
+        <div class="stage-comparison">
+          <div class="stage-variant">
+            <div class="variant-label">Control</div>
+            <div class="variant-value">1,751</div>
+            <div class="variant-rate">52 sign-ups · 2.97%</div>
+          </div>
+          <div class="stage-divider"></div>
+          <div class="stage-variant">
+            <div class="variant-label">Variant</div>
+            <div class="variant-value" style="color: var(--green);">1,863</div>
+            <div class="variant-rate">77 sign-ups · 4.13%</div>
+          </div>
+        </div>
+        <div class="improvement-badge imp-positive">↑ 39% improvement · 97.09% prob.</div>
+      </div>
+      <!-- Lead to Client -->
+      <div class="funnel-stage">
+        <div class="stage-name">Lead → Client</div>
+        <div class="stage-comparison">
+          <div class="stage-variant">
+            <div class="variant-label">Control</div>
+            <div class="variant-value">52</div>
+            <div class="variant-rate">9 won · 17.31%</div>
+          </div>
+          <div class="stage-divider"></div>
+          <div class="stage-variant">
+            <div class="variant-label">Variant</div>
+            <div class="variant-value" style="color: var(--amber);">77</div>
+            <div class="variant-rate">20 won · 25.97%</div>
+          </div>
+        </div>
+        <div class="improvement-badge imp-neutral">↑ 50% improvement · 88.42% prob.</div>
+      </div>
+      <!-- Visitor to Client -->
+      <div class="funnel-stage">
+        <div class="stage-name">Visitor → Client</div>
+        <div class="stage-comparison">
+          <div class="stage-variant">
+            <div class="variant-label">Control</div>
+            <div class="variant-value">1,751</div>
+            <div class="variant-rate">9 won · 0.51%</div>
+          </div>
+          <div class="stage-divider"></div>
+          <div class="stage-variant">
+            <div class="variant-label">Variant</div>
+            <div class="variant-value" style="color: var(--green);">1,863</div>
+            <div class="variant-rate">20 won · 1.07%</div>
+          </div>
+        </div>
+        <div class="improvement-badge imp-positive">↑ 108.86% improvement · 97.17% prob.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conversion Rate Comparison -->
+  <div class="chart-section">
+    <div class="section-title"><span class="num">02</span> Conversion Rates</div>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <div class="chart-card-title">Sign-up Rate (Visitor → Lead)</div>
+        <div class="bar-chart">
+          <div class="bar-row">
+            <span class="bar-label">Control</span>
+            <div class="bar-track">
+              <div class="bar-fill control" style="width: 0%;" data-width="45%">2.97%</div>
+            </div>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">Variant</span>
+            <div class="bar-track">
+              <div class="bar-fill variant" style="width: 0%;" data-width="63%">4.13%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Win Rate (Lead → Client)</div>
+        <div class="bar-chart">
+          <div class="bar-row">
+            <span class="bar-label">Control</span>
+            <div class="bar-track">
+              <div class="bar-fill control" style="width: 0%;" data-width="52%">17.31%</div>
+            </div>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">Variant</span>
+            <div class="bar-track">
+              <div class="bar-fill variant" style="width: 0%;" data-width="78%">25.97%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Overall Conversion (Visitor → Client)</div>
+        <div class="bar-chart">
+          <div class="bar-row">
+            <span class="bar-label">Control</span>
+            <div class="bar-track">
+              <div class="bar-fill control" style="width: 0%;" data-width="32%">0.51%</div>
+            </div>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">Variant</span>
+            <div class="bar-track">
+              <div class="bar-fill variant" style="width: 0%;" data-width="67%">1.07%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-title">Absolute Numbers — Won Clients</div>
+        <div class="bar-chart">
+          <div class="bar-row">
+            <span class="bar-label">Control</span>
+            <div class="bar-track">
+              <div class="bar-fill control" style="width: 0%;" data-width="45%">9</div>
+            </div>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">Variant</span>
+            <div class="bar-track">
+              <div class="bar-fill variant" style="width: 0%;" data-width="100%">20</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lead State Data -->
+  <div class="lead-section">
+    <div class="section-title"><span class="num">03</span> Lead State Breakdown</div>
+    <div class="lead-grid">
+      <div class="lead-card">
+        <div class="lead-card-header">
+          <div class="lead-card-title">Control Group</div>
+          <div class="lead-total">52 total leads</div>
+        </div>
+        <div class="lead-row">
+          <span class="lead-dot" style="background: var(--red);"></span>
+          <span class="lead-name">Lost</span>
+          <span class="lead-count">39</span>
+          <div class="lead-mini-bar"><div class="lead-mini-fill" style="width: 0%; background: var(--red);" data-width="91%"></div></div>
+        </div>
+        <div class="lead-row">
+          <span class="lead-dot" style="background: var(--green);"></span>
+          <span class="lead-name">Won</span>
+          <span class="lead-count">9</span>
+          <div class="lead-mini-bar"><div class="lead-mini-fill" style="width: 0%; background: var(--green);" data-width="21%"></div></div>
+        </div>
+        <div class="lead-row">
+          <span class="lead-dot" style="background: var(--purple);"></span>
+          <span class="lead-name">First Meeting</span>
+          <span class="lead-count">3</span>
+          <div class="lead-mini-bar"><div class="lead-mini-fill" style="width: 0%; background: var(--purple);" data-width="7%"></div></div>
+        </div>
+        <div class="lead-row">
+          <span class="lead-dot" style="background: var(--amber);"></span>
+          <span class="lead-name">Contacted</span>
+          <span class="lead-count">1</span>
+          <div class="lead-mini-bar"><div class="lead-mini-fill" style="width: 0%; background: var(--amber);" data-width="2%"></div></div>
+        </div>
+        <div class="lead-row">
+          <span class="lead-dot" style="background: var(--blue);"></span>
+          <span class="lead-name">New Lead / Dialogue / Offer / Hold / Whatsapp</span>
+          <span class="lead-count">0</span>
+          <div class="lead-mini-bar"><div class="lead-mini-fill" style="width: 0%; background: var(--blue);" data-width="0%"></div></div>
+        </div>
+      </div>
+
+      <div class="lead-card">
+        <div class="lead-card-header">
+          <div class="lead-card-title">Variant Group</div>
+          <div class="lead-total">77 total leads</div>
+        </div>
+        <div class="lead-row">
+          <span class="lead-dot" style="background: var(--red);"></span>
+          <span class="lead-name">Lost</span>
+          <span class="lead-count">54</span>
+          <div class="lead-mini-bar"><div class="lead-mini-fill" style="width: 0%; background: var(--red);" data-width="70%"></div></div>
+        </div>
+        <div class="lead-row">
+          <span class="lead-dot" style="background: var(--green);"></span>
+          <span class="lead-name">Won</span>
+          <span class="lead-count">20</span>
+          <div class="lead-mini-bar"><div class="lead-mini-fill" style="width: 0%; background: var(--green);" data-width="26%"></div></div>
+        </div>
+        <div class="lead-row">
+          <span class="lead-dot" style="background: var(--purple);"></span>
+          <span class="lead-name">First Meeting</span>
+          <span class="lead-count">2</span>
+          <div class="lead-mini-bar"><div class="lead-mini-fill" style="width: 0%; background: var(--purple);" data-width="3%"></div></div>
+        </div>
+        <div class="lead-row">
+          <span class="lead-dot" style="background: var(--amber);"></span>
+          <span class="lead-name">Contacted</span>
+          <span class="lead-count">1</span>
+          <div class="lead-mini-bar"><div class="lead-mini-fill" style="width: 0%; background: var(--amber);" data-width="1%"></div></div>
+        </div>
+        <div class="lead-row">
+          <span class="lead-dot" style="background: var(--blue);"></span>
+          <span class="lead-name">New Lead / Dialogue / Offer / Hold / Whatsapp</span>
+          <span class="lead-count">0</span>
+          <div class="lead-mini-bar"><div class="lead-mini-fill" style="width: 0%; background: var(--blue);" data-width="0%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Probability / Confidence -->
+  <div class="prob-section">
+    <div class="section-title"><span class="num">04</span> Statistical Confidence</div>
+    <div class="prob-grid">
+      <div class="prob-card">
+        <div class="prob-card-title">Visitor → Lead</div>
+        <div class="prob-ring">
+          <svg viewBox="0 0 100 100">
+            <circle class="track" cx="50" cy="50" r="42"/>
+            <circle class="fill" cx="50" cy="50" r="42"
+              stroke="var(--green)"
+              stroke-dasharray="263.9"
+              stroke-dashoffset="263.9"
+              data-offset="7.7"/>
+          </svg>
+          <span class="prob-ring-value" style="color: var(--green);">97.1%</span>
+        </div>
+        <span class="prob-result tag-green">Winner</span>
+      </div>
+      <div class="prob-card">
+        <div class="prob-card-title">Lead → Client</div>
+        <div class="prob-ring">
+          <svg viewBox="0 0 100 100">
+            <circle class="track" cx="50" cy="50" r="42"/>
+            <circle class="fill" cx="50" cy="50" r="42"
+              stroke="var(--amber)"
+              stroke-dasharray="263.9"
+              stroke-dashoffset="263.9"
+              data-offset="30.5"/>
+          </svg>
+          <span class="prob-ring-value" style="color: var(--amber);">88.4%</span>
+        </div>
+        <span class="prob-result tag-amber">Inconclusive</span>
+      </div>
+      <div class="prob-card">
+        <div class="prob-card-title">Visitor → Client</div>
+        <div class="prob-ring">
+          <svg viewBox="0 0 100 100">
+            <circle class="track" cx="50" cy="50" r="42"/>
+            <circle class="fill" cx="50" cy="50" r="42"
+              stroke="var(--green)"
+              stroke-dasharray="263.9"
+              stroke-dashoffset="263.9"
+              data-offset="7.5"/>
+          </svg>
+          <span class="prob-ring-value" style="color: var(--green);">97.2%</span>
+        </div>
+        <span class="prob-result tag-green">Winner</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // Animate bars and rings on load
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      document.querySelectorAll('.bar-fill[data-width]').forEach(el => {
+        el.style.width = el.dataset.width;
+      });
+      document.querySelectorAll('.lead-mini-fill[data-width]').forEach(el => {
+        el.style.width = el.dataset.width;
+      });
+      document.querySelectorAll('.prob-ring .fill[data-offset]').forEach(el => {
+        el.style.strokeDashoffset = el.dataset.offset;
+      });
+    }, 300);
+  });
+</script>
+</body>
+</html>
